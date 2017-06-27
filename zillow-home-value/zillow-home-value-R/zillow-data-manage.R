@@ -5,7 +5,7 @@
   library(lubridate)
   
   # Read files into memory
-  properties <- fread('../data/properties_2016.csv')
+  properties <- fread('../data/properties_2016.csv', verbose=TRUE)
   transactions <- fread('../data/train_2016.csv')
   submission <- fread('../data/sample_submission.csv', header = TRUE)
   
@@ -99,17 +99,22 @@
     date = transactiondate
   )
   
+  
+  # Data Cleaning
+  # tax_delinquency_year has a large number of zeros, but only when delinquency flag is 1. This calls for some transformation,
   properties <- properties %>% 
     mutate(tax_delinquency = ifelse(tax_delinquency=="Y",1,0),
-           flag_fireplace = ifelse(flag_fireplace=="Y",1,0),
-           flag_tub = ifelse(flag_tub=="Y",1,0))
+           flag_fireplace = ifelse(flag_fireplace=="true",1,0),
+           flag_tub = ifelse(flag_tub=="true",1,0),
+           tax_delinquency_year = ifelse(is.na(tax_delinquency_year), -1, tax_delinquency_year ) )
   
   submission <- submission %>% rename(
     id_parcel = ParcelId
   )
   
   # Format date variable
-  transactions <- transactions %>% mutate( year_month = make_date(year = year(date),  month = month(date) ) )
+  transactions <- transactions %>% 
+    mutate( year_month = make_date(year = year(date),  month = month(date) ) )
   
   # Join transactions with properties to create full dataset for analysis
   transactions <- transactions %>% left_join(properties, by = "id_parcel") %>% arrange(id_parcel, date)

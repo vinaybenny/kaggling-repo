@@ -32,4 +32,8 @@ ggplot(missing_values, aes(x = reorder(feature,-missing_pct), y = missing_pct ))
 geom_bar(stat="identity", fill ="red") +
 coord_flip()
 
-good_features <- filter(missing_values, missing_pct<=0.9)
+
+
+
+
+
