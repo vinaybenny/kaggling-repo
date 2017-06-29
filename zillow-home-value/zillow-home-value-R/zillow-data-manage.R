@@ -116,8 +116,7 @@
   transactions <- transactions %>% 
     mutate( year_month = make_date(year = year(date),  month = month(date) ) )
   
-  # Join transactions with properties to create full dataset for analysis
-  transactions <- transactions %>% left_join(properties, by = "id_parcel") %>% arrange(id_parcel, date)
+
   
   
   
