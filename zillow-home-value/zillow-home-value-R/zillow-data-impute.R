@@ -42,10 +42,7 @@ propsubsetimpute <- imputeFAMD(propsubset, ncp=5, verbose=TRUE)
 famdval <- FAMD(propsubset, tab.comp = propsubsetimpute$tab.disj, ncp = 20)
 
 
-#propsubset <- data.table(famdval$svd$U)
-propsubset <- famdval$ind$coord
-propsubset <- propsubsetimpute$completeObs
-names(propsubset) <- rownames(famdval$eig)
+propsubset <- as.data.frame(famdval$ind$coord)
 propsubset$id_parcel <- properties$id_parcel
 
 # Add in extra attributes for modelliing
