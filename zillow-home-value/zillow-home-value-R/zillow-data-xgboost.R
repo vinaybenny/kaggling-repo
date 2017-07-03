@@ -15,7 +15,7 @@ dvalid <- xgb.DMatrix(data.matrix(transactions[-train_indices$Resample1,]), labe
 # Define Hyperparameter grid
 xgb_grid <- expand.grid(
   max_depth = c(3, 5, 7),
-  eta = c(0.1, 0.01)
+  eta = c(0.1, 0.05, 0.01)
 );
 
 
@@ -28,7 +28,7 @@ rmseErrorsHyperparameters <- apply(xgb_grid, 1, function(parameterList){
   eta_val = parameterList[["eta"]]
   print(paste0('Max Depth: ', max_depth_val, ' Eta: ', eta_val))
   
-  bstcv <- xgb.cv(data = dtrain, nrounds = 1000, nfold=10, showsd= TRUE,
+  bstcv <- xgb.cv(data = dtrain, nrounds = 2000, nfold=10, showsd= TRUE,
                   booster = "gbtree",
                   objective="reg:linear", 
                   metrics=list("mae"),

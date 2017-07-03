@@ -114,7 +114,7 @@
   
   # Format date variable
   transactions <- transactions %>% 
-    mutate( year_month = make_date(year = year(date),  month = month(date) ) )
+    mutate(  month = month(date) )
   
 
   
