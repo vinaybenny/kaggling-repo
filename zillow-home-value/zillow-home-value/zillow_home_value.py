@@ -8,12 +8,12 @@ matplotlib.style.use('ggplot')
 
 
 # Missing value analysis
-missingvalue_columns = merged.columns[merged.isnull().any()].tolist()
-msno.bar(merged[missingvalue_columns], figsize=(20,8), fontsize=12, labels=True,)
-msno.heatmap(merged[missingvalue_columns],figsize=(20,20), fontsize=8)
+missingvalue_columns = transactions.columns[transactions.isnull().any()].tolist()
+msno.bar(transactions[missingvalue_columns], figsize=(20,8), fontsize=12, labels=True,)
+msno.heatmap(transactions[missingvalue_columns],figsize=(20,20), fontsize=8)
 
 # Feature Selection with xgboost
-mergedFilterd = merged.fillna(-999)
+mergedFilterd = transactions .fillna(-999)
 for f in mergedFilterd.columns:
     if mergedFilterd[f].dtype=='object':
         lbl = preprocessing.LabelEncoder()

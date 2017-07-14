@@ -4,6 +4,8 @@
   library(ggplot2)
   library(lubridate)
   
+  setwd("C:\\Users\\vinay.benny\\Documents\\Kaggle\\kaggling-repo\\zillow-home-value\\zillow-home-value")
+  
   # Read files into memory
   properties <- fread('../data/properties_2016.csv', verbose=TRUE)
   transactions <- fread('../data/train_2016.csv')
@@ -93,29 +95,29 @@
           fips = as.factor(fips)
           )
   
-  
-  transactions <- transactions %>% rename(
-    id_parcel = parcelid,
-    date = transactiondate
-  )
-  
-  
   # Data Cleaning
   # tax_delinquency_year has a large number of zeros, but only when delinquency flag is 1. This calls for some transformation,
   properties <- properties %>% 
     mutate(tax_delinquency = ifelse(tax_delinquency=="Y",1,0),
            flag_fireplace = ifelse(flag_fireplace=="true",1,0),
            flag_tub = ifelse(flag_tub=="true",1,0),
-           tax_delinquency_year = ifelse(is.na(tax_delinquency_year), -1, tax_delinquency_year ) )
+           tax_delinquency_year = ifelse(is.na(tax_delinquency_year), 16, tax_delinquency_year ) ,
+           tax_delinquency_year = ifelse(tax_delinquency_year > 20, 1900 + tax_delinquency_year, 2000 + tax_delinquency_year)
+           )
   
+  # Add a month variable and rename columns
+  transactions <- transactions %>% rename(
+    id_parcel = parcelid,
+    date = transactiondate
+  ) %>% 
+    mutate(  month = month(date) )
+  
+  
+  # Rename columns
   submission <- submission %>% rename(
     id_parcel = ParcelId
   )
-  
-  # Format date variable
-  transactions <- transactions %>% 
-    mutate(  month = month(date) )
-  
+
 
   
   

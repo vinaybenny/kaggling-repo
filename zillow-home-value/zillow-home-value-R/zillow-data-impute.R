@@ -3,8 +3,7 @@ library(FactoMineR)
 
 # Drop columns with a lot of missing values
 missing_values <- properties %>% summarize_all(funs(sum(is.na(.))/n())) %>% gather(key="feature", value="missing_pct") %>% arrange(missing_pct)
-good_features <- filter(missing_values, missing_pct<=0.33)
-intermediate_features <- filter(missing_values, missing_pct > 0.33, missing_pct <=0.75)
+good_features <- filter(missing_values, missing_pct<=0.75)
 
 # Create a dataset for modelling purposes with extra variables as required
 # Drop the following columns
@@ -19,10 +18,10 @@ intermediate_features <- filter(missing_values, missing_pct > 0.33, missing_pct 
 # tax_delinquency : is not required as information captured is redundant in tax_delinquency_year
 # censustractandblock : not surehow this is different from rawcensusandblock , and unable to understand the data. Need to revisit later
 
-excludecolumns <- c("id_parcel"
-                    ,"zoning_property", "zoning_landuse_county","region_zip", "region_neighbor", "region_city"
+excludecolumns <- c(
+                    "zoning_property", "zoning_landuse_county","region_zip", "region_neighbor", "region_city"
                     ,"tax_year", "tax_delinquency"
-                    ,"censustractandblock"
+                    # ,"censustractandblock"
                     )
 
 propsubset <- properties %>% 
@@ -31,34 +30,27 @@ propsubset <- properties %>%
 
 
 # Other processing
-#modelset <-  data.table(model.matrix(~., data = modelset))
-char_cols <- names(propsubset[, sapply(propsubset, is.factor) ])
-num_cols <- names(propsubset[, sapply(propsubset, is.numeric) ])
+# modelset <-  data.table(model.matrix(~., data = modelset))
+# char_cols <- names(propsubset[, sapply(propsubset, is.factor) ])
+# num_cols <- names(propsubset[, sapply(propsubset, is.numeric) ])
 
 
 
 # Apply factor analysis for imputation
-propsubsetimpute <- imputeFAMD(propsubset, ncp=5, verbose=TRUE)
-famdval <- FAMD(propsubset, tab.comp = propsubsetimpute$tab.disj, ncp = 20)
-
-
-propsubset <- as.data.frame(famdval$ind$coord)
-propsubset$id_parcel <- properties$id_parcel
-
-# Add in extra attributes for modelliing
-propsubset <-  propsubset %>% 
-  left_join( select(properties, id_parcel, excludecolumns[-1], intermediate_features$feature), by="id_parcel")
+# propsubsetimpute <- imputeFAMD(propsubset, ncp=5, verbose=TRUE)
+# famdval <- FAMD(propsubset, tab.comp = propsubsetimpute$tab.disj, ncp = 20)
 
 
 # Join transactions with properties to create full dataset for analysis
-transactions <- transactions %>% left_join(propsubset, by = "id_parcel") %>% arrange(id_parcel, date) 
+transactions <- transactions %>% left_join(propsubset, by = "id_parcel")
 y <- transactions$logerror
-transactions <- transactions %>% select(-one_of( c("date","logerror", "id_parcel") ) )
+transactions <- transactions %>% select(-one_of( c("date","logerror") ) )
 
 
 # Apply all the rules applied to training data to test data as well
 test <- submission %>% 
-  left_join(propsubset, by = "id_parcel")
+  inner_join(propsubset, by = "id_parcel") %>%
+  select(-`201610`, -`201611`, -`201612`, -`201710`, -`201711`, -`201712`)
 
 
 
