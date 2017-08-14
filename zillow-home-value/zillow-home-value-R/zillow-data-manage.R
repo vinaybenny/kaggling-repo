@@ -4,12 +4,17 @@
   library(ggplot2)
   library(lubridate)
   
-  setwd("C:\\Users\\vinay.benny\\Documents\\Kaggle\\kaggling-repo\\zillow-home-value\\zillow-home-value")
+  set.seed(12345)
+  
+  # Set working directory
+  setwd("C:/Users/vinay.benny/Documents/Kaggle/kaggling-repo/zillow-home-value/zillow-home-value-R")
+  
+  
+  ############################### Data Extraction ################################################
   
   # Read files into memory
-  properties <- fread('../data/properties_2016.csv', verbose=TRUE)
-  transactions <- fread('../data/train_2016.csv')
-  submission <- fread('../data/sample_submission.csv', header = TRUE)
+  properties <- fread('../data/properties_2016.csv', stringsAsFactors = FALSE)
+  transactions <- fread('../data/train_2016.csv', stringsAsFactors = FALSE)
   
   # Rename columns to more meaningful values
   properties <- properties %>% rename(
@@ -58,15 +63,15 @@
     quality = buildingqualitytypeid,
     framing = buildingclasstypeid,
     material = typeconstructiontypeid,
-    deck = decktypeid,
+    flag_deck = decktypeid,
     story = storytypeid,
     heating = heatingorsystemtypeid,
     aircon = airconditioningtypeid,
     architectural_style= architecturalstyletypeid,
-    spa = pooltypeid10,
-    pool_with_spa = pooltypeid2,
-    pool_without_hottub = pooltypeid7
-  )
+    flag_spa = pooltypeid10,
+    flag_pool_with_spa = pooltypeid2,
+    flag_pool_without_hottub = pooltypeid7
+  ) 
   
   # Apply datatypes to variables
   properties <- properties %>%
@@ -79,46 +84,43 @@
           zoning_property = as.factor(zoning_property),
           zoning_landuse = as.factor(zoning_landuse),
           zoning_landuse_county = as.factor(zoning_landuse_county),
-          flag_fireplace = as.factor(flag_fireplace),
-          flag_tub = as.factor(flag_tub),
-          quality = as.factor(quality),
+          flag_fireplace = as.factor(flag_fireplace), # Binary
+          flag_tub = as.factor(flag_tub), # Binary
+          quality = as.integer(quality), # Ordinal
           framing = as.factor(framing),
           material = as.factor(material),
-          deck = as.factor(deck),
-          story = as.factor(story),
+          flag_deck = as.integer(flag_deck),# Binary
+          flag_story = as.integer(story), # Could be binary, representing presence of basement or not
           heating = as.factor(heating),
           aircon = as.factor(aircon),
           architectural_style = as.factor(architectural_style),
-          spa = as.factor(spa),
-          pool_with_spa = as.factor(pool_with_spa),
-          pool_without_hottub = as.factor(pool_without_hottub),
+          flag_spa = as.integer(flag_spa), # Binary
+          flag_pool_with_spa = as.factor(flag_pool_with_spa), # Binary
+          flag_pool_without_hottub = as.factor(flag_pool_without_hottub), # Binary
           fips = as.factor(fips)
           )
   
-  # Data Cleaning
-  # tax_delinquency_year has a large number of zeros, but only when delinquency flag is 1. This calls for some transformation,
-  properties <- properties %>% 
-    mutate(tax_delinquency = ifelse(tax_delinquency=="Y",1,0),
-           flag_fireplace = ifelse(flag_fireplace=="true",1,0),
-           flag_tub = ifelse(flag_tub=="true",1,0),
-           tax_delinquency_year = ifelse(is.na(tax_delinquency_year), 16, tax_delinquency_year ) ,
-           tax_delinquency_year = ifelse(tax_delinquency_year > 20, 1900 + tax_delinquency_year, 2000 + tax_delinquency_year)
-           )
-  
   # Add a month variable and rename columns
-  transactions <- transactions %>% rename(
-    id_parcel = parcelid,
-    date = transactiondate
-  ) %>% 
-    mutate(  month = month(date) )
+  transactions <- transactions %>% 
+    rename(
+      id_parcel = parcelid,
+      date = transactiondate) %>% 
+    mutate(  month = month(date),
+             day = day(date)
+    ) 
   
   
-  # Rename columns
-  submission <- submission %>% rename(
-    id_parcel = ParcelId
-  )
-
-
+  #  Convert the datasets into data.table and let id_parcel as key
+  # properties <- data.table(properties)
+  # transactions  <- data.table(transactions)
+  # setkey(properties, id_parcel)
+  # setkey(transactions, id_parcel)
   
+  
+  # Set column nam variables
+  idcol <- "id_parcel"
+  intcols <- names(properties[, sapply(properties, is.integer) & !(names(properties) == idcol)])
+  catcols <- names(properties[, sapply(properties, is.factor) & !(names(properties) == idcol)])
+  numcols <- names(properties[, !names(properties) %in% c(catcols, intcols, idcol) ])
   
   

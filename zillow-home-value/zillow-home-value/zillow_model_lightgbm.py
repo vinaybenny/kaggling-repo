@@ -1,18 +1,12 @@
-import numpy as np
-import pandas as pd
 import lightgbm as lgb
 import gc
 
-print('Loading data ...')
 
-train = pd.read_csv('../data/train_2016.csv')
-prop = pd.read_csv('../data/properties_2016.csv')
-
-for c, dtype in zip(prop.columns, prop.dtypes):	
+for c, dtype in zip(properties.columns, properties.dtypes):	
     if dtype == np.float64:		
-        prop[c] = prop[c].astype(np.float32)
+        properties[c] = properties[c].astype(np.float32)
 
-df_train = train.merge(prop, how='left', on='parcelid')
+df_train = transactions.merge(properties, how='left', on='parcelid')
 
 x_train = df_train.drop(['parcelid', 'logerror', 'transactiondate', 'propertyzoningdesc', 'propertycountylandusecode'], axis=1)
 y_train = df_train['logerror'].values
