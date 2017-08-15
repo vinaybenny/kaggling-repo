@@ -98,7 +98,7 @@
           flag_pool_with_spa = as.factor(flag_pool_with_spa), # Binary
           flag_pool_without_hottub = as.factor(flag_pool_without_hottub), # Binary
           fips = as.factor(fips)
-          )
+          )  
   
   # Add a month variable and rename columns
   transactions <- transactions %>% 

@@ -11,7 +11,7 @@ ggplot(missing_values, aes(x = reorder(feature,-missing_pct), y = missing_pct ))
   geom_bar(stat="identity", fill ="red") +
   coord_flip()
 
-# Obtain combination of missingness patterns
+# Obtain all combination of missingness patterns and their percentages
 missing_pattern <- aggr(properties[, !names(properties) %in% missing_values[which(missing_values$missing_pct == 0), 1]], 
                      col = mdc(1:2), numbers = TRUE, labels = names(properties), cex.axis=.7, gap=3,
                      ylab=c("Proportion of missingness","Missingness Pattern"))
@@ -20,7 +20,7 @@ names(missing_comb)  <- names(miss_pattern$x)
 missing_comb$percent <- miss_pattern$percent
 write.xlsx2(missing_comb, file = "../output/missing_values_combinations.xlsx", row.names = FALSE)
 
-
+# Correlation matrix for missingness in data
 miss_dummy <- as.data.frame(sapply(properties, function(x){ifelse(is.na(x), 1, 0)}))
 corrmat <- cor(miss_dummy[, names(miss_dummy) %in% missing_values[missing_values$missing_pct > 0, 1] ])
 write.xlsx2(corrmat, file = "../output/missingness_correlation.xlsx", row.names = TRUE)
@@ -32,9 +32,16 @@ ggplot(data = melt(corrmat), aes(x = Var1, y= Var2, fill = value)) +
   coord_fixed()
 
 
-############################### Test Feature Importance ################################################
 
 
+# Plot histograms of all variables after filtering NA
+properties %>% 
+  select_if(is.numeric) %>% 
+  select(-one_of(idcol, "censustractandblock", "rawcensustractandblock", "latitude", "longitude")) %>% 
+  melt() %>% 
+  filter(!is.na(value)) %>%
+  ggplot(aes(x = value)) + facet_wrap(~variable,scales = "free_x") + geom_histogram()
+ggsave(file = "../output/plots/histograms_before_imputation.png", device = "png", width = 8, height = 4, units = "in")
 
 
 
