@@ -3,7 +3,7 @@ library(mice)
 library(xlsx)
 
 
-############################### Data Exploration ################################################
+############################### Data Exploration - Properties ################################################
 
 # Missing values by count in properties dataset
 missing_values <- properties %>% summarize_all(funs(sum(is.na(.))/n())) %>% gather(key="feature", value="missing_pct") %>% arrange(missing_pct)
@@ -32,8 +32,6 @@ ggplot(data = melt(corrmat), aes(x = Var1, y= Var2, fill = value)) +
   coord_fixed()
 
 
-
-
 # Plot histograms of all variables after filtering NA
 properties %>% 
   select_if(is.numeric) %>% 
@@ -41,20 +39,25 @@ properties %>%
   melt() %>% 
   filter(!is.na(value)) %>%
   ggplot(aes(x = value)) + facet_wrap(~variable,scales = "free_x") + geom_histogram()
-ggsave(file = "../output/plots/histograms_before_imputation.png", device = "png", width = 8, height = 4, units = "in")
+ggsave(file = "../output/plots/histograms_before_imputation.png", device = "png", width = 16, height = 8, units = "in")
 
 
+
+############################### Data Exploration - Transactions ################################################
 
 
 # Plot count of sales transactions for each month
 transactions %>% 
   mutate(year_month = paste0(as.character(year(date)), "-", 
                              ifelse(nchar(as.character(month(date))) > 1, as.character(month(date)), paste0("0",as.character(month(date))) ))) %>%
-  group_by(year_month) %>% count() %>%
+  group_by(year_month) %>% 
+  count() %>%
   ggplot(aes(x = year_month, y = n)) +
   geom_bar(stat = "identity", fill = "red") +
   geom_vline(aes(xintercept = as.numeric(as.Date("2016-10-01"))), size = 2)
 
+# Properties with multiple sales
+transactions %>% group_by(id_parcel) %>% summarise(ct = n() ) %>% filter(ct >1) %>% arrange( desc(ct) )
 
 # Create plots of each numeric variable against mean absolute log error
 for ( i in 1:length(data_numcols) ) {

@@ -4,13 +4,14 @@
 # flag_pool_with_spa: Mutually exclusive with flag_pool_without_hottub whenever num_pool is not null. Assume 0 when null.
 # flag_pool_without_hottub: As above, assume 0 when null.
 # flag_spa: There are some cases where this exists without num_pool values. Strange, but assume 0 when null.
-# tax_delinquency: Assume 0 when null.
-# tax_delinquency_year: has a large number of zeros, but only when delinquency flag is 1. This calls for some transformation.
+# tax_delinquency: Assume 0 when null (no delinquency).
+# tax_delinquency_year: has a large number of NA, but only when delinquency flag is missing. Assume no delinquency for NAs, so the delinquency year
+#       is same as current year.
 # flag_story: exists only when area_basement exists(except 4 records). Hence this can be considered as a binary flag.
-
-# area_basement is defaulted to 0 whenever it is missing.
-# area_shed is defaulted to 0 when missing, assuming that a storage shed does not exist
-# area_patio is defaulted to 0 when missing, assuming that a patio does not exist
+# area_basement: is defaulted to 0 whenever it is missing.
+# area_shed: is defaulted to 0 when missing, assuming that a storage shed does not exist
+# area_patio: is defaulted to 0 when missing, assuming that a patio does not exist
+# flag_deck: is defaulted to 0 when missing, assuming that a deck does not exist
 properties <- properties %>% 
   mutate(
     # Pool/Spa
@@ -39,5 +40,7 @@ properties <- properties %>%
   # These variables are mutally exclusive when num_pool is available. Since these two are complementary, we only need 1 of these variables.
   select(-flag_pool_without_hottub
          ,-flag_story # redundant information in area_basement.
-         ,-story
+         ,-story # Copied to num_stories
+         ,-tax_delinquency # Information redundant in tax_delinquency_year
          )
+

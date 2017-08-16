@@ -3,7 +3,7 @@ library(FactoMineR)
 
 # Drop columns with a lot of missing values
 missing_values <- properties %>% summarize_all(funs(sum(is.na(.))/n())) %>% gather(key="feature", value="missing_pct") %>% arrange(missing_pct)
-good_features <- filter(missing_values, missing_pct<=0.75)
+good_features <- filter(missing_values, missing_pct==0)
 
 # Create a dataset for modelling purposes with extra variables as required
 # Drop the following columns

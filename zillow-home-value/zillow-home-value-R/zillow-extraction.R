@@ -110,14 +110,14 @@
     ) 
   
   
-  #  Convert the datasets into data.table and let id_parcel as key
+  # Convert the datasets into data.table and let id_parcel as key
   # properties <- data.table(properties)
   # transactions  <- data.table(transactions)
   # setkey(properties, id_parcel)
   # setkey(transactions, id_parcel)
   
   
-  # Set column nam variables
+  # Set column name variables
   idcol <- "id_parcel"
   intcols <- names(properties[, sapply(properties, is.integer) & !(names(properties) == idcol)])
   catcols <- names(properties[, sapply(properties, is.factor) & !(names(properties) == idcol)])
