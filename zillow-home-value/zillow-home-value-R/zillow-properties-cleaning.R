@@ -78,6 +78,11 @@ properties <- properties %>%
     
     flag_tub = ifelse(flag_tub == "true",1,0),
     
+    # Censusblocks
+    rawcensustractandblock = as.character(rawcensustractandblock), 
+    tract_nbr = str_sub(rawcensustractandblock, 5, 11), # tract information
+    tract_block = str_sub(rawcensustractandblock,12), # block information
+    
     # Stories
     flag_story = ifelse(!is.na(area_basement), 1, 0), 
     area_basement = ifelse(!is.na(area_basement), area_basement, 0),
@@ -126,12 +131,14 @@ properties <- properties %>%
   # num_bathroom: This information is redundant in num_bath + num_75_bath
   # flag_fireplace: Information redundant in num_fireplace, except when num_fireplace is NA and flag_fireplace is true. For now, in this situation 
   #   num_fireplace is assumed to be 1. Another option is to leave num_fireplace as NA and use imputation- here we need to include flag_fireplace.
+  # rawcensustractandblock: Consists of fips, tract and block which have been separated out
   select(-flag_pool_without_hottub
          ,-flag_story # redundant information in area_basement.
          ,-story # Copied to num_stories
          ,-tax_delinquency # Information redundant in tax_delinquency_year
          ,-num_bathroom_calc
          ,-num_bathroom
-         ,-flag_fireplace 
+         ,-flag_fireplace
+         ,-rawcensustractandblock 
          )
 
