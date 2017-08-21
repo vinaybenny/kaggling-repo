@@ -4,6 +4,7 @@
   library(ggplot2)
   library(lubridate)
   
+  # Seed for replicability
   set.seed(12345)
   
   # Set working directory
