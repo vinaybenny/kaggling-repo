@@ -82,7 +82,7 @@
           region_zip = as.factor(region_zip),
           region_neighbor = as.factor(region_neighbor),
           tax_delinquency = as.factor(tax_delinquency),
-          zoning_property = as.factor(zoning_property),
+          zoning_property = as.factor(ifelse( zoning_property == "", "UNK", zoning_property) ),
           zoning_landuse = as.factor(zoning_landuse),
           zoning_landuse_county = as.factor(zoning_landuse_county),
           flag_fireplace = as.factor(flag_fireplace), # Binary
@@ -106,8 +106,7 @@
     rename(
       id_parcel = parcelid,
       date = transactiondate) %>% 
-    mutate(  month = month(date),
-             day = day(date)
+    mutate(  month = month(date)
     ) 
   
   

@@ -8,7 +8,7 @@ properties %>%
   select(-one_of(idcol, "censustractandblock", "rawcensustractandblock", "latitude", "longitude")) %>% 
   melt() %>% 
   filter(!is.na(value)) %>%
-  ggplot(aes(x = value)) + facet_wrap(~variable,scales = "free_x") + geom_histogram()
+  ggplot(aes(x = value)) + facet_wrap(~variable,scales = "free") + geom_histogram()
 ggsave(file = "../output/plots/histograms_before_imputation.png", device = "png", width = 16, height = 8, units = "in")
 
 

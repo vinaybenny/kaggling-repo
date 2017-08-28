@@ -7,14 +7,14 @@ validation_size <- 0.7
 train_indices <- createDataPartition(y, times = 1, p = (1-validation_size), list = TRUE)
 
 # Create data matrices, excluding the id_parcel column
-dtrain <- xgb.DMatrix(data.matrix(training[train_indices$Resample1,-1]), label = y[train_indices$Resample1] ) 
-dvalid <- xgb.DMatrix(data.matrix(training[-train_indices$Resample1,-1]), label = y[-train_indices$Resample1] )
-dtest <- xgb.DMatrix(data=as.matrix( test ))
+dtrain <- xgb.DMatrix(data.matrix(training[train_indices$Resample1,]), label = y[train_indices$Resample1] ) 
+dvalid <- xgb.DMatrix(data.matrix(training[-train_indices$Resample1,]), label = y[-train_indices$Resample1] )
+dtest <- xgb.DMatrix(data=data.matrix( test ))
 
 # Define Hyperparameter grid
 xgb_grid <- expand.grid(
-  max_depth = c(2, 3),
-  eta = c(0.02, 0.005)
+  max_depth = c(2, 4, 6),
+  eta = c(0.02, 0.01, 0.005)
 );
 
 

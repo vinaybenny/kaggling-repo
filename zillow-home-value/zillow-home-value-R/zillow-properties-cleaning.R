@@ -1,6 +1,7 @@
 library(VIM)
 library(mice)
 library(xlsx)
+library(stringr)
 
 
 ############################### Missingness Analysis ################################################
@@ -59,6 +60,12 @@ ggplot(data = melt(corrmat), aes(x = Var1, y= Var2, fill = value)) +
 # num_garage: When num_garage is NA, area garage is always NA. This may indicate that there is no garage for the place. Hence assume 0 as count.
 #             However, it is to be noted that there are 57 records with 0 valued num_garage, but with non-zero area_garage values
 # num_story: Assume 0 when NA.
+# latitude and longitude: Convert to x,y,z co-ordinates after converting to radians.
+# zoning_property :  factor with 5000 levels, can't handle the dummy columns right now. will deal with it later
+# zoning_landuse_county : factor with 241 levels. will include later
+# region_zip :  factor with 405 levels, will handle later
+# region_neighbor : factor with 528 levels, will handle later
+# region_city : factor with 186 levels, will handle later
 properties <- properties %>% 
   mutate(
     # Pool/Spa
@@ -82,6 +89,9 @@ properties <- properties %>%
     rawcensustractandblock = as.character(rawcensustractandblock), 
     tract_nbr = str_sub(rawcensustractandblock, 5, 11), # tract information
     tract_block = str_sub(rawcensustractandblock,12), # block information
+    x_coord = cos( (0.0174532925*latitude) / (10^6)) * cos( (0.0174532925*longitude) / (10^6)),
+    y_coord = cos( (0.0174532925*latitude) / (10^6)) * sin( (0.0174532925*longitude) / (10^6)),
+    z_coord = sin( (0.0174532925*latitude) / (10^6)),
     
     # Stories
     flag_story = ifelse(!is.na(area_basement), 1, 0), 
@@ -123,14 +133,50 @@ properties <- properties %>%
     # Garage
     num_garage = ifelse(is.na(num_garage), 0, num_garage),
     # Deck
-    flag_deck = ifelse(is.na(flag_deck), 0, 1)
+    flag_deck = ifelse(is.na(flag_deck), 0, 1),
+    
+    # Zoning
+    zoning_property = as.factor( ifelse(!as.character(zoning_property) %in% 
+                                          ( properties %>% select(zoning_property) %>% group_by(zoning_property) %>% 
+                                            summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                                            head(10) %>% mutate(zoning_property = as.character(zoning_property) ) %>%
+                                            select(zoning_property) %>% data.frame() )[,1],
+                             "OTHERS", as.character(zoning_property)) ),
+    zoning_landuse_county = as.factor( ifelse(!as.character(zoning_landuse_county) %in% 
+                                          ( properties %>% select(zoning_landuse_county) %>% group_by(zoning_landuse_county) %>% 
+                                              summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                                              head(10) %>% mutate(zoning_landuse_county = as.character(zoning_landuse_county) ) %>%
+                                              select(zoning_landuse_county) %>% data.frame() )[,1],
+                                        "OTHERS", as.character(zoning_landuse_county)) ),
+    # Region
+    region_city = relevel(factor(ifelse(is.na(as.character(region_city)), "UNK", as.character(region_city) )), ref = "UNK"), #UNK = Unknown
+    region_city = as.factor( ifelse(!as.character(region_city) %in% 
+                                                 ( properties %>% select(region_city) %>% group_by(region_city) %>% 
+                                                     summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                                                     head(10) %>% mutate(region_city = as.character(region_city) ) %>%
+                                                     select(region_city) %>% data.frame() )[,1],
+                                               "OTHERS", as.character(region_city)) ),
+    region_neighbor = relevel(factor(ifelse(is.na(as.character(region_neighbor)), "UNK", as.character(region_neighbor) )), ref = "UNK"), #UNK = Unknown
+    region_neighbor = as.factor( ifelse(!as.character(region_neighbor) %in% 
+                                      ( properties %>% select(region_neighbor) %>% group_by(region_neighbor) %>% 
+                                          summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                                          head(10) %>% mutate(region_neighbor = as.character(region_neighbor) ) %>%
+                                          select(region_neighbor) %>% data.frame() )[,1],
+                                    "OTHERS", as.character(region_neighbor)) ),
+    region_zip = as.factor( ifelse(!as.character(region_zip) %in% 
+                                          ( properties %>% select(region_zip) %>% group_by(region_zip) %>% 
+                                              summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                                              head(10) %>% mutate(region_zip = as.character(region_zip) ) %>%
+                                              select(region_zip) %>% data.frame() )[,1],
+                                        "OTHERS", as.character(region_zip)) )
+    
   ) %>%
   # When num pool is available, either flag_pool_with_spa or flag_pool_without_hottub is always present, but no cases where both are missing. 
   # These variables are mutally exclusive when num_pool is available. Since these two are complementary, we only need 1 of these variables.
   # num_bathroom_calc: can be dropped safely, since this seems to be exactly the same information but with more NAs as the num_bathroom column.
   # num_bathroom: This information is redundant in num_bath + num_75_bath
   # flag_fireplace: Information redundant in num_fireplace, except when num_fireplace is NA and flag_fireplace is true. For now, in this situation 
-  #   num_fireplace is assumed to be 1. Another option is to leave num_fireplace as NA and use imputation- here we need to include flag_fireplace.
+  # num_fireplace is assumed to be 1. Another option is to leave num_fireplace as NA and use imputation- here we need to include flag_fireplace.
   # rawcensustractandblock: Consists of fips, tract and block which have been separated out
   select(-flag_pool_without_hottub
          ,-flag_story # redundant information in area_basement.
@@ -139,6 +185,23 @@ properties <- properties %>%
          ,-num_bathroom_calc
          ,-num_bathroom
          ,-flag_fireplace
-         ,-rawcensustractandblock 
+         ,-rawcensustractandblock
+         ,-latitude
+         ,-longitude
          )
+
+# Plot histograms of all variables after filtering NA
+ properties %>% 
+  select_if(is.numeric) %>% 
+  select(-one_of(idcol, "censustractandblock")) %>% 
+  melt() %>% 
+  filter(!is.na(value)) %>%
+  ggplot(aes(x = value)) + facet_wrap(~variable,scales = "free") + geom_histogram()
+ggsave(file = "../output/plots/histograms_after_imputation.png", device = "png", width = 16, height = 8, units = "in")
+
+# Missing values after cleaning in properties dataset
+missing_values <- properties %>% summarize_all(funs(sum(is.na(.))/n())) %>% gather(key="feature", value="missing_pct") %>% arrange(missing_pct)
+ggplot(missing_values, aes(x = reorder(feature,-missing_pct), y = missing_pct )) +
+  geom_bar(stat="identity", fill ="red") +
+  coord_flip()
 
