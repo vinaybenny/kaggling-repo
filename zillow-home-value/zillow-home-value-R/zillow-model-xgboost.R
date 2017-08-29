@@ -1,23 +1,19 @@
-library(caret)
 library(xgboost)
 
-validation_size <- 0.7
-
-# Train-Validation split
-train_indices <- createDataPartition(y, times = 1, p = (1-validation_size), list = TRUE)
+############################### Boosted tree model ################################################
 
 # Create data matrices, excluding the id_parcel column
-dtrain <- xgb.DMatrix(data.matrix(training[train_indices$Resample1,]), label = y[train_indices$Resample1] ) 
-dvalid <- xgb.DMatrix(data.matrix(training[-train_indices$Resample1,]), label = y[-train_indices$Resample1] )
-dtest <- xgb.DMatrix(data=data.matrix( test ))
+dtrain <- xgb.DMatrix(data.matrix(train_x), label = train_y ) 
+dvalid <- xgb.DMatrix(data.matrix(valid_x), label = valid_y )
+dtest <- xgb.DMatrix(data=data.matrix(test))
 
 # Define Hyperparameter grid
 xgb_grid <- expand.grid(
   max_depth = c(1),
   eta = c(0.02, 0.005, 0.001)
-);
+)
 
-
+# Hyper-parameter tuning using grid search cross validation
 maeErrorsHyperparameters <- apply(xgb_grid, 1, function(parameterList){
   
   # Extract parameters to use
@@ -48,6 +44,7 @@ maeErrorsHyperparameters <- apply(xgb_grid, 1, function(parameterList){
   return(c(max_depth_val, eta_val, best_iter, maeval))
 })
 
+# Obtain the optimum parameters
 opt_max_depth_val <- maeErrorsHyperparameters[1 , which(maeErrorsHyperparameters[4, ] == min(maeErrorsHyperparameters[4, ]))]
 opt_eta_val <- maeErrorsHyperparameters[2 , which(maeErrorsHyperparameters[4, ] == min(maeErrorsHyperparameters[4, ]))]
 opt_num_rounds <- maeErrorsHyperparameters[3 , which(maeErrorsHyperparameters[4, ] == min(maeErrorsHyperparameters[4, ]))]
@@ -79,16 +76,15 @@ xgb.plot.importance(xgb.importance(colnames(training[train_indices$Resample1,]),
 
 
 # Perform prediction
-j <- 2
-submission$id_parcel <- test$id_parcel
-for(i in c(10, 11, 12, 10, 11, 12) ){
-  print(i)
-  test$month <- rep(i, nrow(test))
-  preds <- predict(opt_model, dtest)
-  submission[, j] <- preds
-  j <- j+1
-}
-
+# j <- 2
+# submission$id_parcel <- test$id_parcel
+# for(i in c(10, 11, 12, 10, 11, 12) ){
+#   print(i)
+#   test$month <- rep(i, nrow(test))
+#   preds <- predict(opt_model, dtest)
+#   submission[, j] <- preds
+#   j <- j+1
+# }
 preds <- predict(opt_model, dtest)
 submission <- data.table(parcelid=properties$id_parcel, 
                       '201610'=preds, 
@@ -99,6 +95,8 @@ submission <- data.table(parcelid=properties$id_parcel,
                       '201712'=preds
 )
 
+
+# Save predictions to submission file
 names(submission)[1] <- "ParcelId"
 fwrite(submission, "../output/full_submission.csv", row.names = FALSE)
 
