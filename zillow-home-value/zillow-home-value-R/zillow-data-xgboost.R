@@ -13,8 +13,8 @@ dtest <- xgb.DMatrix(data=data.matrix( test ))
 
 # Define Hyperparameter grid
 xgb_grid <- expand.grid(
-  max_depth = c(2, 4, 6),
-  eta = c(0.02, 0.01, 0.005)
+  max_depth = c(1),
+  eta = c(0.02, 0.005, 0.001)
 );
 
 
@@ -84,7 +84,6 @@ submission$id_parcel <- test$id_parcel
 for(i in c(10, 11, 12, 10, 11, 12) ){
   print(i)
   test$month <- rep(i, nrow(test))
-  dtest <- xgb.DMatrix( data.matrix(test[,!names(test) %in% c("id_parcel")]) )
   preds <- predict(opt_model, dtest)
   submission[, j] <- preds
   j <- j+1
