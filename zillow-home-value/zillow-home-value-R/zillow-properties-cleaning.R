@@ -33,6 +33,32 @@ ggplot(data = melt(corrmat), aes(x = Var1, y= Var2, fill = value)) +
 
 
 ############################### Data Cleaning ################################################
+# Create lists for collapsing categorical variables with large number of categories
+zoning_property_list <- ( properties %>% select(zoning_property) %>% group_by(zoning_property) %>% 
+                            summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                            head(10) %>% mutate(zoning_property = as.character(zoning_property) ) %>%
+                            select(zoning_property) %>% data.frame() )[,1]
+zoning_landuse_list <- ( properties %>% select(zoning_landuse_county) %>% group_by(zoning_landuse_county) %>% 
+                           summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                           head(10) %>% mutate(zoning_landuse_county = as.character(zoning_landuse_county) ) %>%
+                           select(zoning_landuse_county) %>% data.frame() )[,1]
+properties$region_city <- relevel(factor(ifelse(is.na(as.character(properties$region_city)), "UNK", 
+                                                as.character(properties$region_city) )), ref = "UNK")
+region_city_list <- ( properties %>% select(region_city) %>% group_by(region_city) %>% 
+                        summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                        head(10) %>% mutate(region_city = as.character(region_city) ) %>%
+                        select(region_city) %>% data.frame() )[,1]
+properties$region_neighbor = relevel(factor(ifelse(is.na(as.character(properties$region_neighbor)), "UNK", 
+                                                   as.character(properties$region_neighbor) )), ref = "UNK")
+region_neighbor_list <- ( properties %>% select(region_neighbor) %>% group_by(region_neighbor) %>% 
+                            summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                            head(10) %>% mutate(region_neighbor = as.character(region_neighbor) ) %>%
+                            select(region_neighbor) %>% data.frame() )[,1]
+region_zip_list <- ( properties %>% select(region_zip) %>% group_by(region_zip) %>% 
+                       summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                       head(10) %>% mutate(region_zip = as.character(region_zip) ) %>%
+                       select(region_zip) %>% data.frame() )[,1]
+
 # num_pool: If data in NA, let's assume 0 as count, or to represent unknown- may revisit this later
 # area_pool: If num_pool is NA/0 , assume area_pool is also 0.
 # flag_pool_with_spa: Mutually exclusive with flag_pool_without_hottub whenever num_pool is not null. Assume 0 when null.
@@ -87,8 +113,8 @@ properties <- properties %>%
     
     # Censusblocks
     rawcensustractandblock = as.character(rawcensustractandblock), 
-    tract_nbr = str_sub(rawcensustractandblock, 5, 11), # tract information
-    tract_block = str_sub(rawcensustractandblock,12), # block information
+    tract_nbr = as.factor(str_sub(rawcensustractandblock, 5, 11) ), # tract information
+    tract_block = as.factor(str_sub(rawcensustractandblock,12) ), # block information
     x_coord = cos( (0.0174532925*latitude) / (10^6)) * cos( (0.0174532925*longitude) / (10^6)),
     y_coord = cos( (0.0174532925*latitude) / (10^6)) * sin( (0.0174532925*longitude) / (10^6)),
     z_coord = sin( (0.0174532925*latitude) / (10^6)),
@@ -136,39 +162,17 @@ properties <- properties %>%
     flag_deck = ifelse(is.na(flag_deck), 0, 1),
     
     # Zoning
-    zoning_property = as.factor( ifelse(!as.character(zoning_property) %in% 
-                                          ( properties %>% select(zoning_property) %>% group_by(zoning_property) %>% 
-                                            summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                                            head(10) %>% mutate(zoning_property = as.character(zoning_property) ) %>%
-                                            select(zoning_property) %>% data.frame() )[,1],
-                             "OTHERS", as.character(zoning_property)) ),
-    zoning_landuse_county = as.factor( ifelse(!as.character(zoning_landuse_county) %in% 
-                                          ( properties %>% select(zoning_landuse_county) %>% group_by(zoning_landuse_county) %>% 
-                                              summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                                              head(10) %>% mutate(zoning_landuse_county = as.character(zoning_landuse_county) ) %>%
-                                              select(zoning_landuse_county) %>% data.frame() )[,1],
-                                        "OTHERS", as.character(zoning_landuse_county)) ),
+    zoning_property = as.factor( ifelse( !(as.character(zoning_property) %in% zoning_property_list),"OTHERS", 
+                                         as.character(zoning_property)) ),
+    zoning_landuse_county = as.factor( ifelse( !(as.character(zoning_landuse_county) %in% zoning_landuse_list), "OTHERS", 
+                                              as.character(zoning_landuse_county)) ),
     # Region
-    region_city = relevel(factor(ifelse(is.na(as.character(region_city)), "UNK", as.character(region_city) )), ref = "UNK"), #UNK = Unknown
-    region_city = as.factor( ifelse(!as.character(region_city) %in% 
-                                                 ( properties %>% select(region_city) %>% group_by(region_city) %>% 
-                                                     summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                                                     head(10) %>% mutate(region_city = as.character(region_city) ) %>%
-                                                     select(region_city) %>% data.frame() )[,1],
-                                               "OTHERS", as.character(region_city)) ),
-    region_neighbor = relevel(factor(ifelse(is.na(as.character(region_neighbor)), "UNK", as.character(region_neighbor) )), ref = "UNK"), #UNK = Unknown
-    region_neighbor = as.factor( ifelse(!as.character(region_neighbor) %in% 
-                                      ( properties %>% select(region_neighbor) %>% group_by(region_neighbor) %>% 
-                                          summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                                          head(10) %>% mutate(region_neighbor = as.character(region_neighbor) ) %>%
-                                          select(region_neighbor) %>% data.frame() )[,1],
-                                    "OTHERS", as.character(region_neighbor)) ),
-    region_zip = as.factor( ifelse(!as.character(region_zip) %in% 
-                                          ( properties %>% select(region_zip) %>% group_by(region_zip) %>% 
-                                              summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                                              head(10) %>% mutate(region_zip = as.character(region_zip) ) %>%
-                                              select(region_zip) %>% data.frame() )[,1],
-                                        "OTHERS", as.character(region_zip)) )
+    #region_city = relevel(factor(ifelse(is.na(as.character(region_city)), "UNK", as.character(region_city) )), ref = "UNK"), #UNK = Unknown
+    region_city = as.factor( ifelse( !(as.character(region_city) %in% region_city_list), "OTHERS", as.character(region_city)) ),
+    #region_neighbor = relevel(factor(ifelse(is.na(as.character(region_neighbor)), "UNK", as.character(region_neighbor) )), ref = "UNK"), #UNK = Unknown
+    region_neighbor = as.factor( ifelse( !(as.character(region_neighbor) %in% region_neighbor_list), "OTHERS", 
+                                        as.character(region_neighbor)) ),
+    region_zip = as.factor( ifelse( !(as.character(region_zip) %in% region_zip_list), "OTHERS", as.character(region_zip)) )
     
   ) %>%
   # When num pool is available, either flag_pool_with_spa or flag_pool_without_hottub is always present, but no cases where both are missing. 
@@ -178,22 +182,31 @@ properties <- properties %>%
   # flag_fireplace: Information redundant in num_fireplace, except when num_fireplace is NA and flag_fireplace is true. For now, in this situation 
   # num_fireplace is assumed to be 1. Another option is to leave num_fireplace as NA and use imputation- here we need to include flag_fireplace.
   # rawcensustractandblock: Consists of fips, tract and block which have been separated out
+  # tax_year: The training dataset will onlly have one value, so keeping this attribute will not have any predictive power
+  # censustractandblock: Apparently is duplicate information, and not as complete as rawcensustractandblock
   select(-flag_pool_without_hottub
          ,-flag_story # redundant information in area_basement.
          ,-story # Copied to num_stories
          ,-tax_delinquency # Information redundant in tax_delinquency_year
+         ,-tax_year
          ,-num_bathroom_calc
          ,-num_bathroom
          ,-flag_fireplace
          ,-rawcensustractandblock
          ,-latitude
          ,-longitude
+         ,-censustractandblock
          )
+
+# Update the new columns list
+intcols <- names(properties[, sapply(properties, is.integer) & !(names(properties) == idcol)])
+catcols <- names(properties[, sapply(properties, is.factor) & !(names(properties) == idcol)])
+numcols <- names(properties[, !names(properties) %in% c(catcols, intcols, idcol) ])
 
 # Plot histograms of all variables after filtering NA
  properties %>% 
   select_if(is.numeric) %>% 
-  select(-one_of(idcol, "censustractandblock")) %>% 
+  select(-one_of(idcol)) %>% 
   melt() %>% 
   filter(!is.na(value)) %>%
   ggplot(aes(x = value)) + facet_wrap(~variable,scales = "free") + geom_histogram()

@@ -11,7 +11,7 @@ train_x <- train_x %>% select(-one_of( c("logerror") ) )
 validation_size <- 0.7
 
 # Train-Validation split
-train_indices <- createDataPartition(train_y, times = 1, p = (1-validation_size), list = TRUE)
+train_indices <- createDataPartition(train_y, times = 1, p = validation_size, list = TRUE)
 
 valid_x <- train_x[-train_indices$Resample1,]
 valid_y <- train_y[-train_indices$Resample1]
