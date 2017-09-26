@@ -27,6 +27,32 @@ hyper_params <- list(
   rate_annealing=c(1e-8,1e-7,1e-6)
 )
 
+grid <- h2o.grid(
+  algorithm = "deeplearning",
+  grid_id="dl_grid",
+  training_frame=train_x, 
+  validation_frame= valid_x,   ## validation dataset: used for scoring and early stopping
+  x=predictors,
+  y=response,
+  epochs=1000,
+  #activation="Rectifier",  ## default
+  stopping_rounds=10,
+  stopping_metric="MAE",
+  stopping_tolerance=0.01,
+  l1=1e-5,                        ## add some L1/L2 regularization
+  l2=1e-5,
+  adaptive_rate=F,                ## manually tuned learning rate         
+  momentum_start=0.2,             ## manually tuned momentum
+  momentum_stable=0.4, 
+  momentum_ramp=1e7,
+  max_w2=10,                      ## helps stability for Rectifier
+  hyper_params = hyper_params
+)
+
+grid <- h2o.getGrid("dl_grid",sort_by="MAE",decreasing=FALSE)
+grid@summary_table[1,]
+best_model <- h2o.getModel(grid@model_ids[[1]])
+
 
 m1 <- h2o.deeplearning(
   model_id="dl_model_first", 
@@ -62,3 +88,5 @@ h2o.performance(m3, newdata=valid)    ## full validation data
 h2o.performance(m3, newdata=test)     ## full test data
 
 pred <- h2o.predict(m3, test)
+
+h2o.shutdown(prompt=FALSE)
