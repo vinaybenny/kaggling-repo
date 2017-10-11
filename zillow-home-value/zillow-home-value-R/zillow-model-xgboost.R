@@ -5,12 +5,12 @@ library(xgboost)
 # Create data matrices, excluding the id_parcel column
 dtrain <- xgb.DMatrix(data.matrix(train_x), label = train_y ) 
 dvalid <- xgb.DMatrix(data.matrix(valid_x), label = valid_y )
-dtest <- xgb.DMatrix(data=data.matrix(test))
+dtest <- xgb.DMatrix(data=data.matrix(test %>% select(-id_parcel) %>% select(names(train_x)) ))
 
 # Define Hyperparameter grid
 xgb_grid <- expand.grid(
-  max_depth = c(1),
-  eta = c(0.02, 0.005, 0.001)
+  max_depth = c(1, 2, 3),
+  eta = c(0.02, 0.01, 0.05)
 )
 
 # Hyper-parameter tuning using grid search cross validation
@@ -51,27 +51,27 @@ opt_num_rounds <- maeErrorsHyperparameters[3 , which(maeErrorsHyperparameters[4,
 
 
 # Use the best model output from the hyperpaparmeter tuning using the minimum mae.
-opt_param <- list(max_depth=opt_max_depth_val, 
-                  eta=opt_eta_val
-              )
-opt_model <- xgb.train(opt_param, 
-                       data = dtrain, 
-                       n_thread=4,
-                       booster="gbtree",
+opt_model <- xgb.train(data = dtrain, nrounds = opt_num_rounds, showsd= TRUE,
+                       booster = "gbtree",
+                       objective="reg:linear", 
+                       metrics="mae",
+                       verbose=TRUE,
+                       nthread=4,
+                       max_depth = opt_max_depth_val,
+                       eta = opt_eta_val,
+                       min_child_weight = 10,
                        subsample = 0.7,
                        colsample_bytree = 0.5,
-                       min_child_weight = 10,
-                       nrounds = opt_num_rounds,
-                       objective="reg:linear", 
-                       eval_metric="mae",
-                       verbose=1,
                        maximize = FALSE,
                        seed=12345)
 
+# Test model on validation predictions
+validation_predictions <- predict(opt_model, dvalid)
+sum(abs(valid_y - validation_predictions)) / length(valid_y)
 
 # Perform some analysis on the trained model
 
-xgb.plot.importance(xgb.importance(colnames(training[train_indices$Resample1,]), model = opt_model) , cex=0.9 )
+xgb.plot.importance(xgb.importance(colnames(train_x), model = opt_model) , cex=0.9 )
 
 
 

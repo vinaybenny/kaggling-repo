@@ -1,8 +1,15 @@
+# ================================================================================================ #
+# Description: Create a treatment/control split on transactions, and prepare test data.
+# 
+# Author: V Benny
+#
+# ================================================================================================ #
+
 library(caret)
 
 ############################### Train/Valid/Test Split ################################################
 
-train_x <- transactions
+train_x <- transactions %>% select(-one_of(idcol))
 
 # Join transactions with properties to create full dataset for analysis
 train_y <- train_x$logerror
@@ -19,4 +26,4 @@ train_x <- train_x[train_indices$Resample1,]
 train_y <- train_y[train_indices$Resample1]
 
 # Apply all the rules applied to training data to test data as well
-test <- properties %>% select(one_of(names(train_x)))
+test <- properties %>% mutate(month = 10)

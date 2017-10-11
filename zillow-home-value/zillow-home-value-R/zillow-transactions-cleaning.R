@@ -1,3 +1,11 @@
+# ================================================================================================ #
+# Description: Perform cleaning and application of business rules on transactions data
+# 
+# 
+# Author: V Benny
+#
+# ================================================================================================ #
+
 ############################### Data transformation ################################################
 
 # Join up transactions with properties
@@ -17,7 +25,23 @@ good_features <- filter(missing_values, missing_pct <= 0.25)
 # Drop the following columns
 # censustractandblock : not sure how this is different from rawcensusandblock , and unable to understand the data. Need to revisit later
 
-excludecolumns <- c()
+excludecolumns <- c("none")
 # Remove columns that cannot be used
-transactions <- transactions %>% select(good_features$feature) %>% select(-one_of(idcol, excludecolumns) )
+transactions <- transactions %>% select(good_features$feature) %>% select(-one_of(excludecolumns) )
+
+
+# Try a glm model on the dataset
+res.lm  <-lm(formula = logerror ~ ., data = transactions %>% select(-one_of(idcol)) )
+cooksd <- cooks.distance(res.lm)
+
+# Remove extreme outliers from transactions
+plot(cooksd, pch="*", cex=2, main="Influential Obs by Cooks distance")
+abline(h = 10*mean(cooksd, na.rm=T), col="red")  # add cutoff line
+text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4*mean(cooksd, na.rm=T),names(cooksd),""), col="red")  # add labels
+
+outlier_ids <- data.frame(col = as.numeric(names(cooksd)), value = cooksd) %>% 
+  filter(!is.na(value)) %>% 
+  filter(value > quantile(value, prob = c(0.99))) %>% 
+  select(col)
+transactions <- transactions[-outlier_ids$col,]
 

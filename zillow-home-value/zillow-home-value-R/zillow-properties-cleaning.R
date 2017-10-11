@@ -1,3 +1,11 @@
+# ================================================================================================ #
+# Description: Perform extensive cleaning and application of business rules on properties
+#   dataset, and perform a few checks on distribution.
+# 
+# Author: V Benny
+#
+# ================================================================================================ #
+
 library(VIM)
 library(mice)
 library(xlsx)
@@ -36,7 +44,7 @@ ggplot(data = melt(corrmat), aes(x = Var1, y= Var2, fill = value)) +
 # Create lists for collapsing categorical variables with large number of categories
 zoning_property_list <- ( properties %>% select(zoning_property) %>% group_by(zoning_property) %>% 
                             summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                            head(10) %>% mutate(zoning_property = as.character(zoning_property) ) %>%
+                            head(20) %>% mutate(zoning_property = as.character(zoning_property) ) %>%
                             select(zoning_property) %>% data.frame() )[,1]
 zoning_landuse_list <- ( properties %>% select(zoning_landuse_county) %>% group_by(zoning_landuse_county) %>% 
                            summarise(ct = n()) %>%  arrange(desc(ct)) %>%
@@ -52,15 +60,29 @@ properties$region_neighbor = relevel(factor(ifelse(is.na(as.character(properties
                                                    as.character(properties$region_neighbor) )), ref = "UNK")
 region_neighbor_list <- ( properties %>% select(region_neighbor) %>% group_by(region_neighbor) %>% 
                             summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                            head(10) %>% mutate(region_neighbor = as.character(region_neighbor) ) %>%
+                            head(20) %>% mutate(region_neighbor = as.character(region_neighbor) ) %>%
                             select(region_neighbor) %>% data.frame() )[,1]
 region_zip_list <- ( properties %>% select(region_zip) %>% group_by(region_zip) %>% 
                        summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                       head(10) %>% mutate(region_zip = as.character(region_zip) ) %>%
+                       head(20) %>% mutate(region_zip = as.character(region_zip) ) %>%
                        select(region_zip) %>% data.frame() )[,1]
 
+properties$tract_nbr <- as.factor( ifelse(is.na(properties$rawcensustractandblock), "UNK", 
+                                          str_sub(properties$rawcensustractandblock, 5, 11) ) ) # tract information
+properties$tract_block <- as.factor(ifelse(is.na(properties$rawcensustractandblock), "UNK", 
+                                           str_sub(properties$rawcensustractandblock,12)) ) # block information
+tract_nbr_list <- ( properties %>% select(tract_nbr) %>% group_by(tract_nbr) %>% 
+                      summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                      head(10) %>% mutate(tract_nbr = as.character(tract_nbr) ) %>%
+                      select(tract_nbr) %>% data.frame() )[,1]
+tract_block_list <- ( properties %>% select(tract_block) %>% group_by(tract_block) %>% 
+                        summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                        head(10) %>% mutate(tract_block = as.character(tract_block) ) %>%
+                        select(tract_block) %>% data.frame() )[,1]
+
+
 # num_pool: If data in NA, let's assume 0 as count, or to represent unknown- may revisit this later
-# area_pool: If num_pool is NA/0 , assume area_pool is also 0.
+# area_pool: If num_pool is NA/0 , assume area_pool is also 0. If num_pool s not 0 and area_pool is NA, impute with median value of area_pool.
 # flag_pool_with_spa: Mutually exclusive with flag_pool_without_hottub whenever num_pool is not null. Assume 0 when null.
 # flag_pool_without_hottub: As above, assume 0 when null.
 # flag_spa: There are some cases where this exists without num_pool values. Strange, but assume 0 when null.
@@ -96,7 +118,7 @@ properties <- properties %>%
   mutate(
     # Pool/Spa
     num_pool = ifelse(is.na(num_pool), 0, num_pool),
-    area_pool = ifelse(num_pool == 0, 0, area_pool),
+    area_pool = ifelse(num_pool == 0, 0, ifelse(!is.na(area_pool), area_pool, median(area_pool[!is.na(area_pool) & area_pool != 0]))  ),
     flag_pool_with_spa = ifelse(is.na(flag_pool_with_spa), 0, flag_pool_with_spa),
     flag_pool_without_hottub = ifelse(is.na(flag_pool_without_hottub), 0, 1),
     flag_spa = ifelse(is.na(flag_spa), 0, 1),
@@ -113,8 +135,10 @@ properties <- properties %>%
     
     # Censusblocks
     rawcensustractandblock = as.character(rawcensustractandblock), 
-    tract_nbr = as.factor(str_sub(rawcensustractandblock, 5, 11) ), # tract information
-    tract_block = as.factor(str_sub(rawcensustractandblock,12) ), # block information
+    tract_nbr = as.factor( ifelse( !(as.character(tract_nbr) %in% tract_nbr_list),"OTHERS",
+                       as.character(tract_nbr)) ),
+    tract_block = as.factor( ifelse( !(as.character(tract_block) %in% tract_block_list),"OTHERS",
+                                   as.character(tract_block)) ),
     x_coord = cos( (0.0174532925*latitude) / (10^6)) * cos( (0.0174532925*longitude) / (10^6)),
     y_coord = cos( (0.0174532925*latitude) / (10^6)) * sin( (0.0174532925*longitude) / (10^6)),
     z_coord = sin( (0.0174532925*latitude) / (10^6)),
@@ -174,6 +198,24 @@ properties <- properties %>%
                                         as.character(region_neighbor)) ),
     region_zip = as.factor( ifelse( !(as.character(region_zip) %in% region_zip_list), "OTHERS", as.character(region_zip)) )
     
+    # Data transformations
+    ,area_basement = log(1 + area_basement)
+    ,area_total_calc = log(1 + area_total_calc)
+    ,area_firstfloor_finished = log(1 + area_firstfloor_finished)
+    ,area_live_finished = log(1+area_live_finished)
+    ,area_liveperi_finished = log(1+area_liveperi_finished)
+    ,area_total_finished = log(1+area_total_finished)
+    ,area_unknown = log(1+area_unknown)
+    ,area_base = log(1+area_base)
+    ,area_lot = log(1+area_lot)
+    ,area_garage = log(1+area_garage)
+    ,area_patio = log(1+area_patio)
+    ,area_shed = log(1+area_shed)
+    ,tax_building = log(1+tax_building)
+    ,tax_total = log(1+tax_total)
+    ,tax_land = log(1+tax_land)
+    ,tax_property = log(1+tax_property)
+    
   ) %>%
   # When num pool is available, either flag_pool_with_spa or flag_pool_without_hottub is always present, but no cases where both are missing. 
   # These variables are mutally exclusive when num_pool is available. Since these two are complementary, we only need 1 of these variables.
@@ -204,7 +246,7 @@ catcols <- names(properties[, sapply(properties, is.factor) & !(names(properties
 numcols <- names(properties[, !names(properties) %in% c(catcols, intcols, idcol) ])
 
 # Plot histograms of all variables after filtering NA
- properties %>% 
+properties %>% 
   select_if(is.numeric) %>% 
   select(-one_of(idcol)) %>% 
   melt() %>% 
