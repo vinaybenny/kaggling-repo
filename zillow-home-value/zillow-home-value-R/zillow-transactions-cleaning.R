@@ -30,18 +30,5 @@ excludecolumns <- c("none")
 transactions <- transactions %>% select(good_features$feature) %>% select(-one_of(excludecolumns) )
 
 
-# Try a glm model on the dataset
-res.lm  <-lm(formula = logerror ~ ., data = transactions %>% select(-one_of(idcol)) )
-cooksd <- cooks.distance(res.lm)
 
-# Remove extreme outliers from transactions
-plot(cooksd, pch="*", cex=2, main="Influential Obs by Cooks distance")
-abline(h = 10*mean(cooksd, na.rm=T), col="red")  # add cutoff line
-text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4*mean(cooksd, na.rm=T),names(cooksd),""), col="red")  # add labels
-
-outlier_ids <- data.frame(col = as.numeric(names(cooksd)), value = cooksd) %>% 
-  filter(!is.na(value)) %>% 
-  filter(value > quantile(value, prob = c(0.99))) %>% 
-  select(col)
-transactions <- transactions[-outlier_ids$col,]
 

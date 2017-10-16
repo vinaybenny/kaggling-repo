@@ -77,7 +77,9 @@ colid <- function( x, range=NULL, depth=255 )
 
 plot( transactions$x_coord,transactions$y_coord,col=col[ colid(as.numeric(cut_number(transactions$logerror, 10))) ] ) 
 
-transactions %>% mutate(temp = as.numeric(cut_number(logerror, 5))) %>% ggplot(aes(x_coord, y_coord, color = temp)) + 
+transactions %>% 
+  mutate(temp = region_zip) %>% 
+  ggplot(aes(x_coord, y_coord, color = temp)) + 
   geom_point()
 
 

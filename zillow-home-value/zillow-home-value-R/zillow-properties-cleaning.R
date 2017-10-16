@@ -62,10 +62,10 @@ region_neighbor_list <- ( properties %>% select(region_neighbor) %>% group_by(re
                             summarise(ct = n()) %>%  arrange(desc(ct)) %>%
                             head(20) %>% mutate(region_neighbor = as.character(region_neighbor) ) %>%
                             select(region_neighbor) %>% data.frame() )[,1]
-region_zip_list <- ( properties %>% select(region_zip) %>% group_by(region_zip) %>% 
-                       summarise(ct = n()) %>%  arrange(desc(ct)) %>%
-                       head(20) %>% mutate(region_zip = as.character(region_zip) ) %>%
-                       select(region_zip) %>% data.frame() )[,1]
+# region_zip_list <- ( properties %>% select(region_zip) %>% group_by(region_zip) %>% 
+#                        summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+#                        head(20) %>% mutate(region_zip = as.character(region_zip) ) %>%
+#                        select(region_zip) %>% data.frame() )[,1]
 
 properties$tract_nbr <- as.factor( ifelse(is.na(properties$rawcensustractandblock), "UNK", 
                                           str_sub(properties$rawcensustractandblock, 5, 11) ) ) # tract information
@@ -79,7 +79,8 @@ tract_block_list <- ( properties %>% select(tract_block) %>% group_by(tract_bloc
                         summarise(ct = n()) %>%  arrange(desc(ct)) %>%
                         head(10) %>% mutate(tract_block = as.character(tract_block) ) %>%
                         select(tract_block) %>% data.frame() )[,1]
-
+build_yr_common <- (properties %>% filter(!is.na(build_year)) %>% group_by(build_year) %>% summarise(ct = n()) %>% 
+  arrange(desc(ct)) %>% head(1))$build_year
 
 # num_pool: If data in NA, let's assume 0 as count, or to represent unknown- may revisit this later
 # area_pool: If num_pool is NA/0 , assume area_pool is also 0. If num_pool s not 0 and area_pool is NA, impute with median value of area_pool.
@@ -196,10 +197,13 @@ properties <- properties %>%
     #region_neighbor = relevel(factor(ifelse(is.na(as.character(region_neighbor)), "UNK", as.character(region_neighbor) )), ref = "UNK"), #UNK = Unknown
     region_neighbor = as.factor( ifelse( !(as.character(region_neighbor) %in% region_neighbor_list), "OTHERS", 
                                         as.character(region_neighbor)) ),
-    region_zip = as.factor( ifelse( !(as.character(region_zip) %in% region_zip_list), "OTHERS", as.character(region_zip)) )
+    # region_zip = as.factor( ifelse( !(as.character(region_zip) %in% region_zip_list), "OTHERS", as.character(region_zip)) ),
+    region_zip = as.factor(region_zip),
+    
+    build_year = ifelse(is.na(build_year), build_yr_common, build_year),
     
     # Data transformations
-    ,area_basement = log(1 + area_basement)
+    area_basement = log(1 + area_basement)
     ,area_total_calc = log(1 + area_total_calc)
     ,area_firstfloor_finished = log(1 + area_firstfloor_finished)
     ,area_live_finished = log(1+area_live_finished)
@@ -222,7 +226,7 @@ properties <- properties %>%
   # num_bathroom_calc: can be dropped safely, since this seems to be exactly the same information but with more NAs as the num_bathroom column.
   # num_bathroom: This information is redundant in num_bath + num_75_bath
   # flag_fireplace: Information redundant in num_fireplace, except when num_fireplace is NA and flag_fireplace is true. For now, in this situation 
-  # num_fireplace is assumed to be 1. Another option is to leave num_fireplace as NA and use imputation- here we need to include flag_fireplace.
+  #   num_fireplace is assumed to be 1. Another option is to leave num_fireplace as NA and use imputation- here we need to include flag_fireplace.
   # rawcensustractandblock: Consists of fips, tract and block which have been separated out
   # tax_year: The training dataset will onlly have one value, so keeping this attribute will not have any predictive power
   # censustractandblock: Apparently is duplicate information, and not as complete as rawcensustractandblock

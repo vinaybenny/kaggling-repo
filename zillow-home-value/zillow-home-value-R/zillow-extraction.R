@@ -87,7 +87,7 @@ properties <- properties %>%
     mutate(
         region_county = as.factor(region_county),
         region_city = as.factor(region_city),
-        region_zip = as.factor(region_zip),
+        region_zip = as.integer(region_zip),
         region_neighbor = as.factor(region_neighbor),
         tax_delinquency = as.factor(tax_delinquency),
         zoning_property = as.factor(ifelse( zoning_property == "", "UNK", zoning_property) ),
