@@ -37,6 +37,15 @@ mn_ps_car_11 <- train %>% filter(!is.na(ps_car_11)) %>% summarise(mn = mean(ps_c
 mn_ps_car_12 <- train %>% filter(!is.na(ps_car_12)) %>% summarise(mn = mean(ps_car_12) )
 mn_ps_car_14 <- train %>% filter(!is.na(ps_car_14)) %>% summarise(mn = mean(ps_car_14) )
 mn_ps_reg_03 <- train %>% filter(!is.na(ps_reg_03)) %>% summarise(mn = mean(ps_reg_03) )
+ps_car_11_cat_lst <- ( train %>% select(ps_car_11_cat) %>% group_by(ps_car_11_cat) %>% 
+                         summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                         head(10) %>% mutate(ps_car_11_cat = as.character(ps_car_11_cat) ) %>%
+                         select(ps_car_11_cat) %>% data.frame() )[,1]
+ps_car_06_cat_lst <- ( train %>% select(ps_car_06_cat) %>% group_by(ps_car_06_cat) %>% 
+                            summarise(ct = n()) %>%  arrange(desc(ct)) %>%
+                            head(10) %>% mutate(ps_car_06_cat = as.character(ps_car_06_cat) ) %>%
+                            select(ps_car_06_cat) %>% data.frame() )[,1]
+
 train <- train %>%
   mutate(ps_car_01_cat = factor(ifelse(is.na(ps_car_01_cat), "UNK", as.character(ps_car_01_cat)))
          ,ps_car_02_cat = factor(ifelse(is.na(ps_car_02_cat), "UNK", as.character(ps_car_02_cat)))
@@ -51,6 +60,10 @@ train <- train %>%
          ,ps_car_11 = ifelse(is.na(ps_car_11), mn_ps_car_11[[1]], ps_car_11)
          ,ps_car_12 = ifelse(is.na(ps_car_12), mn_ps_car_12[[1]], ps_car_12)
          ,ps_car_14 = ifelse(is.na(ps_car_14), mn_ps_car_14[[1]], ps_car_14)
+         ,ps_car_06_cat = as.factor( ifelse( !(as.character(ps_car_06_cat) %in% ps_car_06_cat_lst),"OTHERS",
+                                             as.character(ps_car_06_cat)) )
+         ,ps_car_11_cat = as.factor( ifelse( !(as.character(ps_car_11_cat) %in% ps_car_11_cat_lst),"OTHERS",
+                                           as.character(ps_car_11_cat)) )
           )
 
 
@@ -76,6 +89,10 @@ valid <- valid %>%
          ,ps_car_11 = ifelse(is.na(ps_car_11), mn_ps_car_11[[1]], ps_car_11)
          ,ps_car_12 = ifelse(is.na(ps_car_12), mn_ps_car_12[[1]], ps_car_12)
          ,ps_car_14 = ifelse(is.na(ps_car_14), mn_ps_car_14[[1]], ps_car_14)
+         ,ps_car_06_cat = as.factor( ifelse( !(as.character(ps_car_06_cat) %in% ps_car_06_cat_lst),"OTHERS",
+                                             as.character(ps_car_06_cat)) )
+         ,ps_car_11_cat = as.factor( ifelse( !(as.character(ps_car_11_cat) %in% ps_car_11_cat_lst),"OTHERS",
+                                             as.character(ps_car_11_cat)) )
   )
 test <- test %>%
   mutate(ps_car_01_cat = factor(ifelse(is.na(ps_car_01_cat), "UNK", as.character(ps_car_01_cat)))
@@ -91,6 +108,36 @@ test <- test %>%
          ,ps_car_11 = ifelse(is.na(ps_car_11), mn_ps_car_11[[1]], ps_car_11)
          ,ps_car_12 = ifelse(is.na(ps_car_12), mn_ps_car_12[[1]], ps_car_12)
          ,ps_car_14 = ifelse(is.na(ps_car_14), mn_ps_car_14[[1]], ps_car_14)
+         ,ps_car_06_cat = as.factor( ifelse( !(as.character(ps_car_06_cat) %in% ps_car_06_cat_lst),"OTHERS",
+                                             as.character(ps_car_06_cat)) )
+         ,ps_car_11_cat = as.factor( ifelse( !(as.character(ps_car_11_cat) %in% ps_car_11_cat_lst),"OTHERS",
+                                             as.character(ps_car_11_cat)) )
   )
+
+
+##############################################################################################################################
+
+# library(vtreat)
+# 
+# encoder <- vtreat::designTreatmentsZ(train, catcols, minFraction = 0, verbose = TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
