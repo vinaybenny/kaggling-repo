@@ -28,6 +28,8 @@ rfmodel <- randomForest(x = train_x
                           )
 preds <- (predict(rfmodel,data = train_x, type = "prob"))[,2]
 
+
+# Check output stats
 plot(performance(prediction(preds, train_y), "tpr", "fpr"), lwd = 7)
 confusionMatrix(preds, train_y)
 (performance(prediction(preds, train_y), "auc"))@y.values
