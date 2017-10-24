@@ -55,6 +55,10 @@ valid[, catcols] <-  lapply( valid[, catcols], function(x) as.factor(ifelse(x ==
 test[test==-1] <- NA
 test[, catcols] <-  lapply( test[, catcols], function(x) as.factor(ifelse(x == -1, NA, x)) )
 
+# Convert target into a factor variable
+train$target <- factor(train$target)
+valid$target <- factor(valid$target)
+
 
 
 ############################### Data Exploration ################################################

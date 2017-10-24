@@ -9,15 +9,26 @@ library(ROCR)
 library(randomForest)
 
 # Try a simple logit model first
-logitmodel <- glm(formula = target~., data = train %>% select(-one_of(idcol, "ps_ind_09_bin", "ps_ind_14")), family = binomial(link = "logit") )
-preds <- predict.glm(logitmodel, train %>% select(-one_of(idcol, "ps_ind_09_bin", "ps_ind_14")) ) 
+logitmodel <- glm(formula = train_y~.
+                  ,data = train_x
+                  ,family = binomial(link = "logit") )
+preds <- predict.glm(logitmodel
+                     ,train_x
+                     ,type = "response"
+                     ) 
 
 # Try a random forest for classification
-rfmodel <- randomForest(x = train %>% select(-one_of(idcol, "ps_ind_09_bin", "ps_ind_14", targetcol))
-                        ,y = factor(train$target)
-                        ,ntree = 80
-                        ,do.trace = 2)
-preds <- predict(rfmodel, data = train %>% select(-one_of(idcol, "ps_ind_09_bin", "ps_ind_14")) )
+rfmodel <- randomForest(x = train_x
+                        ,y = factor(train_y)
+                        ,ntree = 10
+                        ,do.trace = 2
+                        ,strata = factor(train_y)
+                        ,sampling = c(12000, 12000)
+                        ,nodesize = 10
+                          )
+preds <- (predict(rfmodel,data = train_x, type = "prob"))[,2]
 
-plot(performance(prediction(preds, train$target), "tpr", "rpp"), lwd = 7)
+plot(performance(prediction(preds, train_y), "tpr", "fpr"), lwd = 7)
+confusionMatrix(preds, train_y)
+(performance(prediction(preds, train_y), "auc"))@y.values
 
